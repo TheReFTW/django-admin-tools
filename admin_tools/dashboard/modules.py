@@ -3,6 +3,7 @@ Module where admin tools dashboard modules classes are defined.
 """
 
 from django.apps import apps as django_apps
+
 try:
     from django.urls import reverse
 except ImportError:
@@ -66,13 +67,13 @@ class DashboardModule(object):
         Default value: 'admin_tools/dashboard/module.html'.
     """
 
-    template = 'admin_tools/dashboard/module.html'
+    template = "admin_tools/dashboard/module.html"
     enabled = True
     draggable = True
     collapsible = True
     deletable = True
     show_title = True
-    title = ''
+    title = ""
     title_url = None
     css_classes = None
     pre_content = None
@@ -149,9 +150,11 @@ class DashboardModule(object):
         >>> mod.is_empty()
         True
         """
-        return self.pre_content is None and \
-            self.post_content is None and \
-            len(self.children) == 0
+        return (
+            self.pre_content is None
+            and self.post_content is None
+            and len(self.children) == 0
+        )
 
     def render_css_classes(self):
         """
@@ -168,17 +171,17 @@ class DashboardModule(object):
         >>> mod.render_css_classes()
         'dashboard-module draggable collapsible deletable foo'
         """
-        ret = ['dashboard-module']
+        ret = ["dashboard-module"]
         if not self.enabled:
-            ret.append('disabled')
+            ret.append("disabled")
         if self.draggable:
-            ret.append('draggable')
+            ret.append("draggable")
         if self.collapsible:
-            ret.append('collapsible')
+            ret.append("collapsible")
         if self.deletable:
-            ret.append('deletable')
+            ret.append("deletable")
         ret += self.css_classes
-        return ' '.join(ret)
+        return " ".join(ret)
 
     def _prepare_children(self):
         pass
@@ -231,8 +234,8 @@ class Group(DashboardModule):
     """
 
     force_show_title = True
-    template = 'admin_tools/dashboard/modules/group.html'
-    display = 'tabs'
+    template = "admin_tools/dashboard/modules/group.html"
+    display = "tabs"
 
     def init_with_context(self, context):
         if self._initialized:
@@ -244,7 +247,7 @@ class Group(DashboardModule):
             module.draggable = False
             module.deletable = False
             if self.force_show_title:
-                module.show_title = (self.display == 'stacked')
+                module.show_title = self.display == "stacked"
             module.init_with_context(context)
         self._initialized = True
 
@@ -279,7 +282,7 @@ class Group(DashboardModule):
         # and then prepends them with this group's id
         seen = set()
         for id, module in enumerate(self.children):
-            proposed_id = "%s_%s" % (self.id, module.id or id+1)
+            proposed_id = "%s_%s" % (self.id, module.id or id + 1)
             module.id = uniquify(proposed_id, seen)
             module._prepare_children()
 
@@ -344,9 +347,9 @@ class LinkList(DashboardModule):
     .. image:: images/linklist_dashboard_module.png
     """
 
-    title = _('Links')
-    template = 'admin_tools/dashboard/modules/link_list.html'
-    layout = 'stacked'
+    title = _("Links")
+    template = "admin_tools/dashboard/modules/link_list.html"
+    layout = "stacked"
 
     def init_with_context(self, context):
         if self._initialized:
@@ -354,24 +357,24 @@ class LinkList(DashboardModule):
         new_children = []
         for link in self.children:
             if isinstance(link, (tuple, list,)):
-                link_dict = {'title': link[0], 'url': link[1]}
+                link_dict = {"title": link[0], "url": link[1]}
                 if len(link) >= 3:
-                    link_dict['external'] = link[2]
+                    link_dict["external"] = link[2]
                 if len(link) >= 4:
-                    link_dict['description'] = link[3]
+                    link_dict["description"] = link[3]
                 if len(link) >= 5:
-                    link_dict['attrs'] = link[4]
+                    link_dict["attrs"] = link[4]
                 link = link_dict
-            if 'attrs' not in link:
-                link['attrs'] = {}
-            link['attrs']['href'] = link['url']
-            if link.get('description', ''):
-                link['attrs']['title'] = link['description']
-            if link.get('external', False):
-                link['attrs']['class'] = ' '.join(
-                    ['external-link'] + link['attrs'].get('class', '').split()
+            if "attrs" not in link:
+                link["attrs"] = {}
+            link["attrs"]["href"] = link["url"]
+            if link.get("description", ""):
+                link["attrs"]["title"] = link["description"]
+            if link.get("external", False):
+                link["attrs"]["class"] = " ".join(
+                    ["external-link"] + link["attrs"].get("class", "").split()
                 ).strip()
-            link['attrs'] = flatatt(link['attrs'])
+            link["attrs"] = flatatt(link["attrs"])
             new_children.append(link)
         self.children = new_children
         self._initialized = True
@@ -426,48 +429,44 @@ class AppList(DashboardModule, AppListElementMixin):
         the django.contrib.auth.Group model line will not be displayed.
     """
 
-    title = _('Applications')
-    template = 'admin_tools/dashboard/modules/app_list.html'
+    title = _("Applications")
+    template = "admin_tools/dashboard/modules/app_list.html"
     models = None
     exclude = None
     include_list = None
     exclude_list = None
 
     def __init__(self, title=None, **kwargs):
-        self.models = list(kwargs.pop('models', []))
-        self.exclude = list(kwargs.pop('exclude', []))
-        self.include_list = kwargs.pop('include_list', [])  # deprecated
-        self.exclude_list = kwargs.pop('exclude_list', [])  # deprecated
+        self.models = list(kwargs.pop("models", []))
+        self.exclude = list(kwargs.pop("exclude", []))
+        self.include_list = kwargs.pop("include_list", [])  # deprecated
+        self.exclude_list = kwargs.pop("exclude_list", [])  # deprecated
         super(AppList, self).__init__(title, **kwargs)
 
     def init_with_context(self, context):
         if self._initialized:
             return
-        items = self._visible_models(context['request'])
+        items = self._visible_models(context["request"])
         apps = {}
         for model, perms in items:
             app_label = model._meta.app_label
             if app_label not in apps:
                 apps[app_label] = {
-                    'title':
-                        django_apps.get_app_config(app_label).verbose_name,
-                    'url': self._get_admin_app_list_url(model, context),
-                    'models': []
+                    "title": django_apps.get_app_config(app_label).verbose_name,
+                    "url": self._get_admin_app_list_url(model, context),
+                    "models": [],
                 }
             model_dict = {}
-            model_dict['title'] = model._meta.verbose_name_plural
-            if perms['change'] or perms.get('view', False):
-                model_dict['change_url'] = self._get_admin_change_url(
-                    model,
-                    context
-                )
-            if perms['add']:
-                model_dict['add_url'] = self._get_admin_add_url(model, context)
-            apps[app_label]['models'].append(model_dict)
+            model_dict["title"] = model._meta.verbose_name_plural
+            if perms["change"] or perms.get("view", False):
+                model_dict["change_url"] = self._get_admin_change_url(model, context)
+            if perms["add"]:
+                model_dict["add_url"] = self._get_admin_add_url(model, context)
+            apps[app_label]["models"].append(model_dict)
 
         for app in sorted(apps.keys()):
             # sort model list alphabetically
-            apps[app]['models'].sort(key=lambda x: x['title'])
+            apps[app]["models"].sort(key=lambda x: x["title"])
             self.children.append(apps[app])
         self._initialized = True
 
@@ -516,7 +515,7 @@ class ModelList(DashboardModule, AppListElementMixin):
         the django.contrib.auth.Group model line will not be displayed.
     """
 
-    template = 'admin_tools/dashboard/modules/model_list.html'
+    template = "admin_tools/dashboard/modules/model_list.html"
     models = None
     exclude = None
     include_list = None
@@ -525,10 +524,10 @@ class ModelList(DashboardModule, AppListElementMixin):
     def __init__(self, title=None, models=None, exclude=None, **kwargs):
         self.models = list(models or [])
         self.exclude = list(exclude or [])
-        self.include_list = kwargs.pop('include_list', [])  # deprecated
-        self.exclude_list = kwargs.pop('exclude_list', [])  # deprecated
-        if 'extra' in kwargs:
-            self.extra = kwargs.pop('extra')
+        self.include_list = kwargs.pop("include_list", [])  # deprecated
+        self.exclude_list = kwargs.pop("exclude_list", [])  # deprecated
+        if "extra" in kwargs:
+            self.extra = kwargs.pop("extra")
         else:
             self.extra = []
         super(ModelList, self).__init__(title, **kwargs)
@@ -536,27 +535,24 @@ class ModelList(DashboardModule, AppListElementMixin):
     def init_with_context(self, context):
         if self._initialized:
             return
-        items = self._visible_models(context['request'])
+        items = self._visible_models(context["request"])
         if not items:
             return
         for model, perms in items:
             model_dict = {}
-            model_dict['title'] = model._meta.verbose_name_plural
-            if perms['change'] or perms.get('view', False):
-                model_dict['change_url'] = self._get_admin_change_url(
-                    model,
-                    context
-                )
-            if perms['add']:
-                model_dict['add_url'] = self._get_admin_add_url(model, context)
+            model_dict["title"] = model._meta.verbose_name_plural
+            if perms["change"] or perms.get("view", False):
+                model_dict["change_url"] = self._get_admin_change_url(model, context)
+            if perms["add"]:
+                model_dict["add_url"] = self._get_admin_add_url(model, context)
             self.children.append(model_dict)
         if self.extra:
             # TODO - permissions support
             for extra_url in self.extra:
                 model_dict = {}
-                model_dict['title'] = extra_url['title']
-                model_dict['change_url'] = extra_url['change_url']
-                model_dict['add_url'] = extra_url.get('add_url', None)
+                model_dict["title"] = extra_url["title"]
+                model_dict["change_url"] = extra_url["change_url"]
+                model_dict["add_url"] = extra_url.get("add_url", None)
                 self.children.append(model_dict)
 
         self._initialized = True
@@ -600,17 +596,19 @@ class RecentActions(DashboardModule):
 
     .. image:: images/recentactions_dashboard_module.png
     """
-    title = _('Recent Actions')
-    template = 'admin_tools/dashboard/modules/recent_actions.html'
+
+    title = _("Recent Actions")
+    template = "admin_tools/dashboard/modules/recent_actions.html"
     limit = 10
     include_list = None
     exclude_list = None
 
-    def __init__(self, title=None, limit=10, include_list=None,
-                 exclude_list=None, **kwargs):
+    def __init__(
+        self, title=None, limit=10, include_list=None, exclude_list=None, **kwargs
+    ):
         self.include_list = include_list or []
         self.exclude_list = exclude_list or []
-        kwargs.update({'limit': limit})
+        kwargs.update({"limit": limit})
         super(RecentActions, self).__init__(title, **kwargs)
 
     def init_with_context(self, context):
@@ -619,7 +617,7 @@ class RecentActions(DashboardModule):
         from django.db.models import Q
         from django.contrib.admin.models import LogEntry
 
-        request = context['request']
+        request = context["request"]
 
         def get_qset(list):
             # Import this here to silence RemovedInDjango19Warning. See #15
@@ -631,14 +629,11 @@ class RecentActions(DashboardModule):
                     current_qset = Q(content_type__id=contenttype.id)
                 else:
                     try:
-                        app_label, model = contenttype.split('.')
+                        app_label, model = contenttype.split(".")
                     except:
-                        raise ValueError(
-                            'Invalid contenttype: "%s"' % contenttype
-                        )
+                        raise ValueError('Invalid contenttype: "%s"' % contenttype)
                     current_qset = Q(
-                        content_type__app_label=app_label,
-                        content_type__model=model
+                        content_type__app_label=app_label, content_type__model=model
                     )
                 if qset is None:
                     qset = current_qset
@@ -656,9 +651,9 @@ class RecentActions(DashboardModule):
         if self.exclude_list:
             qs = qs.exclude(get_qset(self.exclude_list))
 
-        self.children = qs.select_related('content_type', 'user')[:self.limit]
+        self.children = qs.select_related("content_type", "user")[: self.limit]
         if not len(self.children):
-            self.pre_content = _('No recent actions.')
+            self.pre_content = _("No recent actions.")
         self._initialized = True
 
 
@@ -704,35 +699,38 @@ class Feed(DashboardModule):
     .. image:: images/feed_dashboard_module.png
     """
 
-    title = _('RSS Feed')
-    template = 'admin_tools/dashboard/modules/feed.html'
+    title = _("RSS Feed")
+    template = "admin_tools/dashboard/modules/feed.html"
     feed_url = None
     limit = None
 
     def __init__(self, title=None, feed_url=None, limit=None, **kwargs):
-        kwargs.update({'feed_url': feed_url, 'limit': limit})
+        kwargs.update({"feed_url": feed_url, "limit": limit})
         super(Feed, self).__init__(title, **kwargs)
 
     def init_with_context(self, context):
         if self._initialized:
             return
         import datetime
+
         if self.feed_url is None:
-            raise ValueError('You must provide a valid feed URL')
+            raise ValueError("You must provide a valid feed URL")
         try:
             import feedparser
         except ImportError:
-            self.children.append({
-                'title': ('You must install the FeedParser python module'),
-                'warning': True,
-            })
+            self.children.append(
+                {
+                    "title": ("You must install the FeedParser python module"),
+                    "warning": True,
+                }
+            )
             return
 
         feed = feedparser.parse(self.feed_url)
         if self.limit is not None:
-            entries = feed['entries'][:self.limit]
+            entries = feed["entries"][: self.limit]
         else:
-            entries = feed['entries']
+            entries = feed["entries"]
         for entry in entries:
             entry.url = entry.link
             try:
@@ -741,4 +739,50 @@ class Feed(DashboardModule):
                 # no date for certain feeds
                 pass
             self.children.append(entry)
+        self._initialized = True
+
+
+# Custom created module type for conversation codes
+class RecentConversationCodes(DashboardModule):
+    """
+    Module that lists the most recent conversation codes with link to their analytics tabs.
+    As well as the :class:`~admin_tools.dashboard.modules.DashboardModule`
+    properties, the :class:`~admin_tools.dashboard.modules.RecentConversationCodes`
+    takes one extra keyword argument:
+
+    ``limit``
+        The maximum number of children to display. Default value: 10.
+
+    Here's a small example of building a recent actions module::
+
+        from admin_tools.dashboard import modules, Dashboard
+
+        class MyDashboard(Dashboard):
+            def __init__(self, **kwargs):
+                Dashboard.__init__(self, **kwargs)
+
+                # will only list the django.contrib apps
+                self.children.append(modules.RecentActions(
+                    limit='10',
+                ))
+
+    """
+
+    title = _("Active Conversation Codes")
+    template = "admin_tools/dashboard/modules/conversation_code.html"
+    limit = 10
+
+    def __init__(self, title=None, limit=10, **kwargs):
+        kwargs.update({"limit": limit})
+        super(RecentConversationCodes, self).__init__(title, **kwargs)
+
+    def init_with_context(self, context):
+        if self._initialized:
+            return
+        from django.db.models import Q
+        from knock.models import Conversation_code, Conversations
+
+        self.children = Conversation_code.objects.all()[: self.limit]
+        if not len(self.children):
+            self.pre_content = _("No conversation codes.")
         self._initialized = True
