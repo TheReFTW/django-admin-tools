@@ -1,0 +1,13 @@
+{% extends "admin_tools/dashboard/module.html" %}
+{% block module_content %}
+<ul>
+    {% spaceless %}
+    {% for child in module.children %}
+    <li class="{% cycle 'odd' 'even' %}">
+        <span class="float-right">{{ child.created_at }}</span>
+        <a href="{% url 'admin:cc_analytics' child.pk %}">{{ child.code }}: {{ child.description }}</a>
+    </li>
+    {% endfor %}
+    {% endspaceless %}
+</ul>
+{% endblock %}
